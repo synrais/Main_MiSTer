@@ -1,7 +1,10 @@
-# Main_MiSTer Main Binary and Wiki Repo
+# Insert Coin is a db extension for update_all Downloader
 
-This repo serves as the home for the MiSTer Main binaries and the Wiki.
+in downloader.ini (SD root) add the following :
 
-For the purposes of getting google to crawl the wiki, here's a link to the (not for humans) [crawlable wiki](https://github-wiki-see.page/m/MiSTer-devel/Wiki_MiSTer/wiki)
+<p>[funkycochise/Insert-Coin]</p>
+<p>db_url = https://raw.githubusercontent.com/funkycochise/Insert-Coin/db/db.json.zip</p>
 
-If you're a human looking for the wiki, that's [here](https://github.com/MiSTer-devel/Wiki_MiSTer/wiki)
+<p>After running update_all, launch update_all_insertcoin.sh which would be installed in Script folder</p>
+
+https://youtu.be/eB6NfVC9T9E
