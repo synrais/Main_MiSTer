@@ -127,6 +127,7 @@ static const ini_var_t ini_vars[] =
 	{ "CONTROLLER_UNIQUE_MAPPING", (void *)(cfg.controller_unique_mapping), UINT32ARR, 0, 0xFFFFFFFF },
 	{ "OSD_LOCK", (void*)(&(cfg.osd_lock)), STRING, 0, sizeof(cfg.osd_lock) - 1 },
 	{ "OSD_LOCK_TIME", (void*)(&(cfg.osd_lock_time)), UINT16, 0, 60 },
+	{ "SHOW_PROGRESS_INFO", (void*)(&(cfg.show_progress_info)), UINT8, 0, 1 },
 };
 
 static const int nvars = (int)(sizeof(ini_vars) / sizeof(ini_var_t));
@@ -538,6 +539,8 @@ void cfg_parse()
 	strcpy(cfg.video_gain_offset, "1, 0, 1, 0, 1, 0");
 	has_video_sections = false;
 	using_video_section = false;
+	cfg.disable_autofire = 1;
+	cfg.show_progress_info = 0;
 	cfg_error_count = 0;
 	ini_parse(altcfg(), video_get_core_mode_name(1));
 	if (has_video_sections && !using_video_section)
