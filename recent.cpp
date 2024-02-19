@@ -14,7 +14,7 @@
 
 #define RECENT_MAX 16
 
-int SaveRecentFileToTmp(void* pBuffer, size_t size);
+void SaveRecentFileToTmp(void* pBuffer, size_t size);
 
 struct recent_rec_t
 {
@@ -269,7 +269,7 @@ void recent_update(char* dir, char* path, char* label, int idx)
     if(indexToErase) memmove(recents + 1, recents, sizeof(recents[0])*indexToErase);
     memcpy(recents, &rec, sizeof(recents[0]));
 
-    
+
     FileSaveConfig(recent_create_config_name(idx), recents, sizeof(recents));
 
     // Additionally save to /tmp/recents.txt
@@ -280,7 +280,7 @@ void recent_clear(int idx)
 {
     memset(recents, 0, sizeof(recents));
 
-    
+
     FileSaveConfig(recent_create_config_name(idx), recents, sizeof(recents));
 
     // Additionally clear /tmp/recents.txt
