@@ -291,9 +291,17 @@ void SaveRecentFileToTmp(void *pBuffer, size_t size) {
     const char* tmpFilePath = "/tmp/recents.txt";
     FILE* file = fopen(tmpFilePath, "wb");
     if (file) {
-        size_t maxCharacters = 1500; // Maximum number of characters to write
-        size_t bytesToWrite = (size < maxCharacters) ? size : maxCharacters;
-        fwrite(pBuffer, 1, bytesToWrite, file);
+        size_t start = 1024; // Start position
+        size_t end = 1280;   // End position
+
+        // Write the specified portion of pBuffer to the file while removing null characters
+        for (size_t i = start; i < end && i < size; ++i) {
+            char currentChar = *((char*)pBuffer + i);
+            if (currentChar != '\0') {
+                fwrite(&currentChar, 1, 1, file);
+            }
+        }
+        
         fclose(file);
     }
 }
