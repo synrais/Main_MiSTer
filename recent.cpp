@@ -14,6 +14,8 @@
 
 #define RECENT_MAX 16
 
+int SaveRecentFileToTmp(void* pBuffer, size_t size);
+
 struct recent_rec_t
 {
 	char dir[1024];
@@ -242,42 +244,54 @@ int recent_select(char *dir, char *path, char *label)
 
 void recent_update(char* dir, char* path, char* label, int idx)
 {
-	if (!cfg.recents || !strlen(path)) return;
+    if (!cfg.recents || !strlen(path)) return;
 
-	// separate the path into directory and filename
-	char* name = strrchr(path, '/');
-	if (name) name++; else name = path;
+    char* name = strrchr(path, '/');
+    if (name) name++; else name = path;
 
-	// load the current state.  this is necessary because we may have started a ROM from multiple sources
-	recent_load(idx);
+    recent_load(idx);
 
-	// update the selection
-	int indexToErase = RECENT_MAX - 1;
-	recent_rec_t rec = {};
-	strncpy(rec.dir, dir, sizeof(rec.dir)-1);
-	strncpy(rec.name, name, sizeof(rec.name)-1);
-	strncpy(rec.label, label ? label : name, sizeof(rec.label)-1);
+    int indexToErase = RECENT_MAX - 1;
+    recent_rec_t rec = {};
+    strncpy(rec.dir, dir, sizeof(rec.dir)-1);
+    strncpy(rec.name, name, sizeof(rec.name)-1);
+    strncpy(rec.label, label ? label : name, sizeof(rec.label)-1);
 
-	for (unsigned i = 0; i < sizeof(recents)/sizeof(recents[0]); i++)
-	{
-		if (!strcmp(recents[i].dir, dir) && !strcmp(recents[i].name, name))
-		{
-			indexToErase = i;
-			break;
-		}
-	}
+    for (unsigned i = 0; i < sizeof(recents)/sizeof(recents[0]); i++)
+    {
+        if (!strcmp(recents[i].dir, dir) && !strcmp(recents[i].name, name))
+        {
+            indexToErase = i;
+            break;
+        }
+    }
 
-	if(indexToErase) memmove(recents + 1, recents, sizeof(recents[0])*indexToErase);
-	memcpy(recents, &rec, sizeof(recents[0]));
+    if(indexToErase) memmove(recents + 1, recents, sizeof(recents[0])*indexToErase);
+    memcpy(recents, &rec, sizeof(recents[0]));
 
-	// store the config file to storage
-	FileSaveConfig(recent_create_config_name(idx), recents, sizeof(recents));
+    
+    FileSaveConfig(recent_create_config_name(idx), recents, sizeof(recents));
+
+    // Additionally save to /tmp/recents.txt
+    SaveRecentFileToTmp(recents, sizeof(recents));
 }
 
 void recent_clear(int idx)
 {
-	memset(recents, 0, sizeof(recents));
+    memset(recents, 0, sizeof(recents));
 
-	// store the config file to storage
-	FileSaveConfig(recent_create_config_name(idx), recents, sizeof(recents));
+    
+    FileSaveConfig(recent_create_config_name(idx), recents, sizeof(recents));
+
+    // Additionally clear /tmp/recents.txt
+    SaveRecentFileToTmp(recents, sizeof(recents));
+}
+// New function to save recents directly to /tmp/recents.txt
+void SaveRecentFileToTmp(void *pBuffer, size_t size) {
+    const char* tmpFilePath = "/tmp/recents.txt";
+    FILE* file = fopen(tmpFilePath, "wb");
+    if (file) {
+        fwrite(pBuffer, 1, size, file);
+        fclose(file);
+    }
 }
