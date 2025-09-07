@@ -6,6 +6,7 @@
 #include <linux/input.h>
 #include <sys/inotify.h>
 #include <sys/poll.h>
+#include <sys/ioctl.h>
 #include <map>
 #include <string>
 #include <vector>
@@ -23,16 +24,34 @@ static void open_device(const char *name) {
     if(strncmp(name, "event", 5)) return;
     std::string path = std::string(input_dir) + "/" + name;
     int fd = open(path.c_str(), O_RDONLY | O_NONBLOCK);
-    if(fd < 0) return;
+    if(fd < 0) {
+        perror("open failed");
+        return;
+    }
+
     char devname[256] = {0};
-    ioctl(fd, EVIOCGNAME(sizeof(devname)), devname);
+    if(ioctl(fd, EVIOCGNAME(sizeof(devname)), devname) < 0) {
+        strncpy(devname, "Unknown", sizeof(devname));
+    }
+
+    // Try to grab the device (exclusive access)
+    int grab = 1;
+    if(ioctl(fd, EVIOCGRAB, &grab) < 0) {
+        perror("EVIOCGRAB failed");
+    } else {
+        fprintf(stdout, "Grabbed %s (%s)\n", path.c_str(), devname);
+    }
+
     devices.emplace(fd, InputDevice{fd, path, devname});
     fprintf(stdout, "Opened %s (%s)\n", path.c_str(), devname);
 }
 
 static void scan_devices() {
     DIR *dir = opendir(input_dir);
-    if(!dir) return;
+    if(!dir) {
+        perror("opendir failed");
+        return;
+    }
     struct dirent *ent;
     while((ent = readdir(dir))) {
         if(ent->d_name[0] == '.') continue;
@@ -53,7 +72,9 @@ static void handle_inotify(int fd) {
         if(ev->mask & IN_DELETE) {
             for(auto it = devices.begin(); it != devices.end();) {
                 if(it->second.path.substr(strlen(input_dir)+1) == ev->name) {
-                    fprintf(stdout, "Closed %s (%s)\n", it->second.path.c_str(), it->second.name.c_str());
+                    fprintf(stdout, "Closed %s (%s)\n",
+                        it->second.path.c_str(),
+                        it->second.name.c_str());
                     close(it->second.fd);
                     it = devices.erase(it);
                 } else {
@@ -71,17 +92,23 @@ static void read_events(int fd) {
     if(rd < (ssize_t)sizeof(struct input_event)) return;
     int cnt = rd / sizeof(struct input_event);
     for(int i=0; i<cnt; i++) {
-        fprintf(stdout, "%s: type %u code %u value %d\n", devices[fd].name.c_str(), ev[i].type, ev[i].code, ev[i].value);
+        fprintf(stdout, "%s: type %u code %u value %d\n",
+            devices[fd].name.c_str(),
+            ev[i].type,
+            ev[i].code,
+            ev[i].value);
     }
     fflush(stdout);
 }
 
 int main() {
     scan_devices();
+
     int in_fd = inotify_init1(IN_NONBLOCK);
     if(in_fd >= 0) {
         inotify_add_watch(in_fd, input_dir, IN_CREATE | IN_DELETE);
     }
+
     while(true) {
         std::vector<pollfd> pfds;
         if(in_fd >= 0) pfds.push_back({in_fd, POLLIN, 0});
@@ -101,5 +128,6 @@ int main() {
             if(pfds[index].revents & POLLIN) read_events(pfds[index].fd);
         }
     }
+
     return 0;
 }
