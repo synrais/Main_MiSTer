@@ -1,40 +1,24 @@
-name: CI Build MiSTer + Tool
+name: Build MiSTer Main
 
 on:
   push:
     branches: [ master ]
-  workflow_dispatch:
+  pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: misterdevelop/mister-builder:latest
-
+      image: misterdevelop/mister-builder:latest   # Official MiSTer toolchain image
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - name: Checkout sources
+        uses: actions/checkout@v4   # was v3
 
       - name: Build Main MiSTer
         run: make -j$(nproc)
 
-      - name: Upload MiSTer binary
-        uses: actions/upload-artifact@v3
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4   # was v3
         with:
           name: MiSTer-main
-          path: ./MiSTer
-
-      - name: Build input_monitor (if exists)
-        run: |
-          if [ -f tools/input_monitor/input_monitor.cpp ]; then
-            mkdir -p tools/input_monitor/bin
-            arm-none-linux-gnueabihf-g++ -O2 -Wall \
-              -o tools/input_monitor/bin/input_monitor \
-              tools/input_monitor/input_monitor.cpp
-          fi
-
-      - name: Upload input_monitor
-        uses: actions/upload-artifact@v3
-        with:
-          name: input-monitor
-          path: tools/input_monitor/bin/input_monitor
+          path: MiSTer   # adjust if your Makefile outputs differently
