@@ -1,19 +1,38 @@
-name: CI Build
+name: Build MiSTer Main and Tools
 
 on:
   push:
-  workflow_dispatch:
+    branches: [ master ]
+  pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: misterdevelop/mister-builder:latest
 
     steps:
-    - uses: actions/checkout@v2
+      - name: Checkout sources
+        uses: actions/checkout@v3
 
-    - name: Build
-      run: set -o pipefail && curl --fail --location https://raw.githubusercontent.com/MiSTer-unstable-nightlies/Build-Automation_MiSTer/main/build.sh | bash -
-      env:
-        REPOSITORY: ${{ github.repository }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        DISPATCH_TOKEN: ${{ secrets.BUILD_AUTOMATION_DISPATCH_TOKEN }}
+      # === Build MiSTer ===
+      - name: Build Main MiSTer
+        run: make -j$(nproc)
+
+      - name: Upload MiSTer binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: MiSTer-main
+          path: ./MiSTer
+
+      # === Build your tool (input_monitor or similar) ===
+      - name: Build input_monitor tool
+        run: |
+          cd tools/input_monitor    # adjust if your code lives somewhere else
+          make -j$(nproc) || ${CXX:-arm-none-linux-gnueabihf-g++} -O2 -Wall -o input_monitor input_monitor.cpp
+
+      - name: Upload input_monitor binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: input-monitor
+          path: tools/input_monitor/input_monitor
