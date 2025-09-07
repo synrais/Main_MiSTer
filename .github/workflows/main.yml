@@ -1,4 +1,4 @@
-name: Build MiSTer binaries
+name: Build MiSTer Main
 
 on:
   push:
@@ -8,36 +8,17 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    container:
+      image: misterdevelop/mister-builder:latest   # Official MiSTer toolchain image
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout sources
+        uses: actions/checkout@v3
 
-      - name: Install ARM cross-compiler
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
-          sudo ln -s /usr/bin/arm-linux-gnueabihf-gcc /usr/bin/arm-none-linux-gnueabihf-gcc
-          sudo ln -s /usr/bin/arm-linux-gnueabihf-g++ /usr/bin/arm-none-linux-gnueabihf-g++
+      - name: Build Main MiSTer
+        run: make -j$(nproc)
 
-      - name: Build native x86 binary
-        run: make clean && make CXX=g++ CC=gcc
-      - name: Verify x86 binary
-        run: file bin/* || true
-
-      - name: Upload x86 artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
         with:
-          name: mister-binary-x86
-          path: bin/*
-
-      - name: Build ARM (MiSTer) binary
-        run: make clean && make CXX=arm-none-linux-gnueabihf-g++ CC=arm-none-linux-gnueabihf-gcc
-      - name: Verify ARM binary
-        run: file bin/* || true
-
-      - name: Upload ARM artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: mister-binary-arm
-          path: bin/*
+          name: MiSTer-main
+          path: MiSTer       # adjust if your Makefile outputs differently
