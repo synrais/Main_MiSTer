@@ -1,9 +1,9 @@
-name: Build MiSTer Main and Tools
+name: CI Build MiSTer + Tool
 
 on:
   push:
     branches: [ master ]
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,10 +12,9 @@ jobs:
       image: misterdevelop/mister-builder:latest
 
     steps:
-      - name: Checkout sources
+      - name: Checkout
         uses: actions/checkout@v3
 
-      # === Build MiSTer ===
       - name: Build Main MiSTer
         run: make -j$(nproc)
 
@@ -25,14 +24,17 @@ jobs:
           name: MiSTer-main
           path: ./MiSTer
 
-      # === Build your tool (input_monitor or similar) ===
-      - name: Build input_monitor tool
+      - name: Build input_monitor (if exists)
         run: |
-          cd tools/input_monitor    # adjust if your code lives somewhere else
-          make -j$(nproc) || ${CXX:-arm-none-linux-gnueabihf-g++} -O2 -Wall -o input_monitor input_monitor.cpp
+          if [ -f tools/input_monitor/input_monitor.cpp ]; then
+            mkdir -p tools/input_monitor/bin
+            arm-none-linux-gnueabihf-g++ -O2 -Wall \
+              -o tools/input_monitor/bin/input_monitor \
+              tools/input_monitor/input_monitor.cpp
+          fi
 
-      - name: Upload input_monitor binary
+      - name: Upload input_monitor
         uses: actions/upload-artifact@v3
         with:
           name: input-monitor
-          path: tools/input_monitor/input_monitor
+          path: tools/input_monitor/bin/input_monitor
