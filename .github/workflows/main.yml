@@ -1,0 +1,28 @@
+name: Build MiSTer binary
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install ARM cross-compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+
+      - name: Build
+        run: make CXX=arm-linux-gnueabihf-g++
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mister-binary
+          path: input_monitor
